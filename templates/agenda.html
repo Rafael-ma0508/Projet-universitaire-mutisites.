@@ -1,0 +1,408 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>{{ agenda.name }} - Agenda</h1>
+    <div>
+        {% if current_user_role in ['owner', 'admin', 'team_leader'] %}
+        <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#createTicketModal">
+            + Nouveau Ticket
+        </button>
+        {% endif %}
+        
+        {% if current_user_role in ['owner', 'admin'] %}
+        <button class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#createTeamModal">
+            + Nouvelle Équipe
+        </button>
+        {% endif %}
+    </div>
+</div>
+
+<div class="row">
+    <!-- Colonne gauche -->
+    <div class="col-md-3">
+        <!-- Carte Équipes -->
+        <div class="card">
+            <div class="card-header">
+                <h5>Équipes</h5>
+            </div>
+            <div class="card-body">
+                <ul class="list-group list-group-flush">
+                    {% for team in teams %}
+                    <li class="list-group-item d-flex align-items-center">
+                        <span class="badge me-2" style="background-color: {{ team.color }}; width: 20px; height: 20px; display: inline-block;"></span>
+                        {{ team.name }}
+                    </li>
+                    {% else %}
+                    <li class="list-group-item text-muted">Aucune équipe créée</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+        
+        <!-- Légende -->
+        <div class="card mt-3">
+            <div class="card-header">
+                <h5>Légende</h5>
+            </div>
+            <div class="card-body">
+                {% for team in teams %}
+                <div class="d-flex align-items-center mb-2">
+                    <div style="width: 15px; height: 15px; background-color: {{ team.color }}; margin-right: 10px;"></div>
+                    <span>{{ team.name }}</span>
+                </div>
+                {% else %}
+                <p class="text-muted mb-0">Aucune équipe</p>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <!-- Membres -->
+        <div class="card mt-3">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Membres</h5>
+                {% if agenda.owner_id == current_user.id %}
+                <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#inviteMemberModal">
+                    + Inviter
+                </button>
+                {% endif %}
+            </div>
+            <div class="card-body">
+                <ul class="list-group list-group-flush">
+                    <!-- Propriétaire -->
+                    <li class="list-group-item">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>{{ agenda.owner.username }}</strong>
+                                <span class="badge bg-success ms-2">Propriétaire</span>
+                            </div>
+                        </div>
+                    </li>
+                    
+                    <!-- Membres invités -->
+                    {% for member in agenda_members %}
+                    <li class="list-group-item">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>{{ member.user.username }}</strong>
+                                <span class="badge 
+                                    {% if member.role == 'admin' %}bg-primary
+                                    {% elif member.role == 'team_leader' %}bg-warning text-dark
+                                    {% else %}bg-secondary{% endif %} ms-2">
+                                    {{ member.role }}
+                                </span>
+                                
+                                {% if member.role == 'team_leader' and member.team %}
+                                <small class="text-muted d-block mt-1">
+                                    👑 Chef de l'équipe : {{ member.team.name }}
+                                </small>
+                                {% endif %}
+                            </div>
+                            
+                            {% if agenda.owner_id == current_user.id %}
+                            <div class="btn-group">
+                                <button class="btn btn-sm btn-outline-secondary dropdown-toggle" 
+                                        type="button" data-bs-toggle="dropdown">
+                                    Action
+                                </button>
+                                <ul class="dropdown-menu">
+                                    <li>
+                                        <form method="POST" action="{{ url_for('update_role', agenda_id=agenda.id, user_id=member.user_id) }}">
+                                            <input type="hidden" name="role" value="admin">
+                                            <button type="submit" class="dropdown-item">Passer Administrateur</button>
+                                        </form>
+                                    </li>
+                                    <li>
+                                        <form method="POST" action="{{ url_for('update_role', agenda_id=agenda.id, user_id=member.user_id) }}">
+                                            <input type="hidden" name="role" value="team_leader">
+                                            <button type="submit" class="dropdown-item">Passer Chef d'équipe</button>
+                                        </form>
+                                    </li>
+                                    <li>
+                                        <form method="POST" action="{{ url_for('update_role', agenda_id=agenda.id, user_id=member.user_id) }}">
+                                            <input type="hidden" name="role" value="collaborator">
+                                            <button type="submit" class="dropdown-item">Passer Collaborateur</button>
+                                        </form>
+                                    </li>
+                                    
+                                    {% if member.role == 'team_leader' %}
+                                    <li>
+                                        <button class="dropdown-item" data-bs-toggle="modal" 
+                                                data-bs-target="#assignTeamModal{{ member.user_id }}">
+                                            Changer d'équipe
+                                        </button>
+                                    </li>
+                                    {% endif %}
+                                    
+                                    <li><hr class="dropdown-divider"></li>
+                                    
+                                    <li>
+                                        <form method="POST" action="{{ url_for('remove_member', agenda_id=agenda.id, user_id=member.user_id) }}"
+                                              onsubmit="return confirm('Retirer ce membre ?')">
+                                            <button type="submit" class="dropdown-item text-danger">Retirer</button>
+                                        </form>
+                                    </li>
+                                </ul>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Colonne droite : Calendrier -->
+    <div class="col-md-9">
+        <div id="calendar" style="height: 600px;"></div>
+    </div>
+</div>
+
+<!-- Modal création ticket -->
+<div class="modal fade" id="createTicketModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Nouveau Ticket</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="createTicketForm" data-agenda-id="{{ agenda.id }}">
+                    <div class="mb-3">
+                        <label for="ticketTitle" class="form-label">Titre *</label>
+                        <input type="text" class="form-control" id="ticketTitle" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="ticketDescription" class="form-label">Description</label>
+                        <textarea class="form-control" id="ticketDescription" rows="3"></textarea>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="ticketStart" class="form-label">Date et heure de début *</label>
+                            <input type="datetime-local" class="form-control" id="ticketStart" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="ticketEnd" class="form-label">Date et heure de fin *</label>
+                            <input type="datetime-local" class="form-control" id="ticketEnd" required>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="ticketTeam" class="form-label">Équipe</label>
+                        <select class="form-select" id="ticketTeam">
+                            <option value="">Sans équipe</option>
+                            {% for team in teams %}
+                            <option value="{{ team.id }}" style="color: {{ team.color }}">{{ team.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="ticketColor" class="form-label">Couleur</label>
+                        <input type="color" class="form-control form-control-color" id="ticketColor" value="#2ecc71">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                <button type="button" class="btn btn-primary" onclick="createTicket()">Créer</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal création équipe -->
+<div class="modal fade" id="createTeamModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Nouvelle Équipe</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('create_team', agenda_id=agenda.id) }}">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="teamName" class="form-label">Nom de l'équipe *</label>
+                        <input type="text" class="form-control" id="teamName" name="name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="teamColor" class="form-label">Couleur de l'équipe</label>
+                        <input type="color" class="form-control form-control-color" id="teamColor" name="color" value="#3498db">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-primary">Créer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal d'invitation -->
+<div class="modal fade" id="inviteMemberModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Inviter un membre</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('invite_to_agenda', agenda_id=agenda.id) }}">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="email" class="form-label">Email de l'utilisateur *</label>
+                        <input type="email" class="form-control" id="email" name="email" required
+                               placeholder="exemple@email.com">
+                    </div>
+                    <div class="mb-3">
+                        <label for="role" class="form-label">Rôle *</label>
+                        <select class="form-select" id="role" name="role" required>
+                            <option value="admin">Administrateur (peut tout faire sauf supprimer l'agenda)</option>
+                            <option value="team_leader" selected>Chef d'équipe (peut gérer ses équipes)</option>
+                            <option value="collaborator">Collaborateur (peut voir et commenter)</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-primary">Inviter</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modals pour changer l'équipe des chefs d'équipe -->
+{% for member in agenda_members %}
+    {% if member.role == 'team_leader' %}
+    <div class="modal fade" id="assignTeamModal{{ member.user_id }}" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Assigner une équipe à {{ member.user.username }}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form method="POST" action="{{ url_for('assign_team_leader', agenda_id=agenda.id, user_id=member.user_id) }}">
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="team_id" class="form-label">Équipe à diriger</label>
+                            <select class="form-select" id="team_id" name="team_id" required>
+                                {% for team in teams %}
+                                <option value="{{ team.id }}" {% if member.team_id == team.id %}selected{% endif %}>
+                                    {{ team.name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                        <button type="submit" class="btn btn-primary">Assigner</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+{% endfor %}
+
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const calendarEl = document.getElementById('calendar');
+        
+        if (!calendarEl) {
+            console.error("Élément #calendar non trouvé!");
+            return;
+        }
+        
+        console.log("Initialisation du calendrier...");
+        console.log("Rôle utilisateur:", '{{ current_user_role }}');
+        
+        const calendar = new FullCalendar.Calendar(calendarEl, {
+            initialView: 'timeGridWeek',
+            locale: 'fr',
+            headerToolbar: {
+                left: 'prev,next today',
+                center: 'title',
+                right: 'dayGridMonth,timeGridWeek,timeGridDay'
+            },
+            events: {{ tickets|safe }},
+            
+            // ÉDITABLE selon le rôle
+            editable: {% if current_user_role in ['owner', 'admin', 'team_leader'] %}true{% else %}false{% endif %},
+            
+            droppable: true,
+            eventDrop: function(info) {
+                console.log("Ticket déplacé:", info.event.id);
+                console.log("Équipe du ticket:", info.event.extendedProps.team_id);
+                
+                fetch(`/api/drag_ticket/${info.event.id}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        new_start: info.event.start.toISOString(),
+                        new_end: info.event.end ? info.event.end.toISOString() : null
+                    })
+                }).then(response => response.json())
+                  .then(data => {
+                      if (!data.success) {
+                          console.error("Erreur lors du déplacement:", data);
+                          alert(data.error || 'Erreur lors du déplacement');
+                          info.revert();
+                      } else {
+                          console.log("Ticket déplacé avec succès");
+                      }
+                  });
+            },
+            eventClick: function(info) {
+                console.log("Ticket cliqué:", info.event.id);
+                window.location.href = `/ticket_history/${info.event.id}`;
+            }
+        });
+        
+        calendar.render();
+        console.log("Calendrier rendu avec succès");
+    });
+    
+    function createTicket() {
+        const form = document.getElementById('createTicketForm');
+        const formData = {
+            agenda_id: form.dataset.agendaId,
+            title: document.getElementById('ticketTitle').value,
+            description: document.getElementById('ticketDescription').value,
+            start_time: document.getElementById('ticketStart').value + ':00',
+            end_time: document.getElementById('ticketEnd').value + ':00',
+            team_id: document.getElementById('ticketTeam').value || null,
+            color: document.getElementById('ticketColor').value
+        };
+        
+        console.log("Création de ticket:", formData);
+        
+        fetch('/api/create_ticket', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(formData)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Ticket créé avec succès!');
+                location.reload();
+            } else {
+                alert('Erreur: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Une erreur est survenue');
+        });
+    }
+</script>
+{% endblock %}

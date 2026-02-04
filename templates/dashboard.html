@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>Mes Agendas</h1>
+    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createAgendaModal">
+        + Nouvel Agenda
+    </button>
+</div>
+
+<div class="row">
+    {% for item in agendas %}
+    <div class="col-md-4 mb-3">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">{{ item.agenda.name }}</h5>
+                <p class="card-text">{{ item.agenda.description|truncate(100) }}</p>
+            
+                <!-- Afficher le rôle -->
+                <div class="mb-2">
+                    {% if item.role == 'owner' %}
+                    <span class="badge bg-success">Propriétaire</span>
+                    {% elif item.role == 'admin' %}
+                    <span class="badge bg-primary">Administrateur</span>
+                    {% elif item.role == 'team_leader' %}
+                    <span class="badge bg-warning text-dark">Chef d'équipe</span>
+                    {% else %}
+                    <span class="badge bg-secondary">Collaborateur</span>
+                    {% endif %}
+                </div>
+            
+                <a href="{{ url_for('agenda_view', agenda_id=item.agenda.id) }}" class="btn btn-outline-primary">
+                Ouvrir l'agenda
+                </a>
+            </div>
+        </div>
+    </div>
+{% endfor %}
+</div>
+
+<!-- Modal de création d'agenda -->
+<div class="modal fade" id="createAgendaModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Nouvel Agenda</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('create_agenda') }}">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="name" class="form-label">Nom de l'agenda *</label>
+                        <input type="text" class="form-control" id="name" name="name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Description</label>
+                        <textarea class="form-control" id="description" name="description" rows="3"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-primary">Créer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

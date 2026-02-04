@@ -1,0 +1,50 @@
+<!-- templates/create_ticket.html -->
+<div class="modal fade" id="createTicketModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Nouveau Ticket</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="createTicketForm" data-agenda-id="{{ agenda.id }}">
+                    <div class="mb-3">
+                        <label for="ticketTitle" class="form-label">Titre *</label>
+                        <input type="text" class="form-control" id="ticketTitle" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="ticketDescription" class="form-label">Description</label>
+                        <textarea class="form-control" id="ticketDescription" rows="3"></textarea>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="ticketStart" class="form-label">Date et heure de début *</label>
+                            <input type="datetime-local" class="form-control" id="ticketStart" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="ticketEnd" class="form-label">Date et heure de fin *</label>
+                            <input type="datetime-local" class="form-control" id="ticketEnd" required>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="ticketTeam" class="form-label">Équipe</label>
+                        <select class="form-select" id="ticketTeam">
+                            <option value="">Sans équipe</option>
+                            {% for team in teams %}
+                            <option value="{{ team.id }}" style="color: {{ team.color }}">{{ team.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="ticketColor" class="form-label">Couleur</label>
+                        <input type="color" class="form-control form-control-color" id="ticketColor" value="#2ecc71">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                <button type="button" class="btn btn-primary" onclick="createTicket()">Créer</button>
+            </div>
+        </div>
+    </div>
+</div>

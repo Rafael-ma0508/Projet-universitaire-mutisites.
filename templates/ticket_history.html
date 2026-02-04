@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Historique du Ticket : {{ ticket.title }}</h1>
+        <a href="{{ url_for('agenda_view', agenda_id=ticket.agenda_id) }}" class="btn btn-secondary">
+            Retour à l'agenda
+        </a>
+    </div>
+    
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5>Informations du ticket</h5>
+        </div>
+        <div class="card-body">
+            <p><strong>Titre :</strong> {{ ticket.title }}</p>
+            <p><strong>Description :</strong> {{ ticket.description or 'Aucune description' }}</p>
+            <p><strong>Créé le :</strong> {{ ticket.created_at.strftime('%d/%m/%Y %H:%M') }}</p>
+            <p><strong>Dernière modification :</strong> {{ ticket.updated_at.strftime('%d/%m/%Y %H:%M') }}</p>
+            <p><strong>Agenda :</strong> {{ ticket.agenda.name }}</p>
+            {% if ticket.team %}
+            <p><strong>Équipe :</strong> <span style="color: {{ ticket.team.color }}">{{ ticket.team.name }}</span></p>
+            {% endif %}
+        </div>
+    </div>
+    
+    <div class="card">
+        <div class="card-header">
+            <h5>Historique des modifications</h5>
+        </div>
+        <div class="card-body">
+            {% if history %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Date/Heure</th>
+                            <th>Utilisateur</th>
+                            <th>Action</th>
+                            <th>Détails</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for entry in history %}
+                        <tr>
+                            <td>{{ entry.timestamp.strftime('%d/%m/%Y %H:%M') }}</td>
+                            <td>{{ entry.user.username }}</td>
+                            <td>
+                                {% if entry.action == 'created' %}
+                                <span class="badge bg-success">Création</span>
+                                {% elif entry.action == 'updated' %}
+                                <span class="badge bg-primary">Modification</span>
+                                {% elif entry.action == 'moved' %}
+                                <span class="badge bg-warning text-dark">Déplacement</span>
+                                {% elif entry.action == 'deleted' %}
+                                <span class="badge bg-danger">Suppression</span>
+                                {% else %}
+                                <span class="badge bg-secondary">{{ entry.action }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if entry.changes %}
+                                <button class="btn btn-sm btn-outline-info" type="button" 
+                                    data-bs-toggle="collapse" data-bs-target="#details-{{ entry.id }}">
+                                    Voir détails
+                                </button>
+                                <div class="collapse mt-2" id="details-{{ entry.id }}">
+                                    <div class="card card-body">
+                                        <pre class="mb-0"><code>{{ entry.changes }}</code></pre>
+                                    </div>
+                                </div>
+                                {% else %}
+                                <em class="text-muted">Aucun détail</em>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="alert alert-info">
+                Aucun historique disponible pour ce ticket.
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

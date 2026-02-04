@@ -1,0 +1,27 @@
+<!-- templates/create_team.html -->
+<div class="modal fade" id="createTeamModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Nouvelle Équipe</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('create_team', agenda_id=agenda.id) }}">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="teamName" class="form-label">Nom de l'équipe *</label>
+                        <input type="text" class="form-control" id="teamName" name="name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="teamColor" class="form-label">Couleur de l'équipe</label>
+                        <input type="color" class="form-control form-control-color" id="teamColor" name="color" value="#3498db">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-primary">Créer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
