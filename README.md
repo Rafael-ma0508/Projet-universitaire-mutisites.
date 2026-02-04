@@ -1,4 +1,4 @@
-# Projet-universitaire-mutisites.
+# Projet-universitaire-Agenta_collaboratif.
 Ceci a été un site crée en groupe lors d'une SAE dans le cadre de ma 2ème année de BUT Réseau et Télécommunications
 Réaliser par Rafael, Andon, Adam, Hamza et Jawher / 2025/2026
 
